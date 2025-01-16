@@ -1,0 +1,52 @@
+services:
+  # FastAPI
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"  
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:0101@postgres/application
+      - KAFKA_BROKER=kafka:9093
+    depends_on:
+      - postgres
+      - kafka
+
+  # PostgreSQL 
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 0101
+      POSTGRES_DB: application
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Kafka
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka
+    environment:
+      KAFKA_LISTENERS: INSIDE://:9093,OUTSIDE://:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+
+  # Zookeeper 
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+volumes:
+  postgres_data:
+    driver: local
